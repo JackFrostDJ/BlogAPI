@@ -7,7 +7,7 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class PostSerializer(serializers.ModelSerializer):
-    comments = CommentSerializer(many=True, read_only=True)
+    comments = CommentSerializer(many=True, read_only=True, default=list)
 
     class Meta:
         model = Post

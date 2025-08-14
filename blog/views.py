@@ -4,7 +4,8 @@ from .serializers import PostSerializer, CommentSerializer
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.shortcuts import render
-import requests, os, re
+from django.conf import settings
+import requests, re
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
@@ -17,16 +18,6 @@ class CommentViewSet(viewsets.ModelViewSet):
 def frontend_view(request):
     return render(request, "blog/frontend.html")
 
-# Featherless configuration
-FEATHERLESS_API_KEY = os.getenv("FEATHERLESS_API_KEY")
-FEATHERLESS_API_URL = "https://api.featherless.ai/v1/completions"
-FEATHERLESS_MODEL = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-
-HEADERS = {
-    "Authorization": f"Bearer rc_21380bf2f121200aafa1cba8de35d0a4400c711e10e1cf95b68c6fb606ee5778",
-    "Content-Type": "application/json"
-}
-
 # Bonus AI-generated blog post
 @api_view(["POST"])
 def generate_post(request):
@@ -35,7 +26,7 @@ def generate_post(request):
         return Response({"error": "Prompt is required"}, status=400)
 
     payload = {
-        "model": FEATHERLESS_MODEL,
+        "model": settings.FEATHERLESS_MODEL,
         "prompt": f"Write a detailed, well-structured blog post about the following topic: {prompt}. Avoid repetition and be clear and informative.",
         "max_tokens": 300,         # limit length of the response
         "temperature": 0.6,        # controls randomness; lower is more focused
@@ -45,7 +36,7 @@ def generate_post(request):
     }
 
     try:
-        result = requests.post(FEATHERLESS_API_URL, headers=HEADERS, json=payload, timeout=20)
+        result = requests.post(settings.FEATHERLESS_API_URL, headers=settings.HEADERS, json=payload, timeout=20)
         result.raise_for_status()
         response = result.json()
         print("AI Response:", response)

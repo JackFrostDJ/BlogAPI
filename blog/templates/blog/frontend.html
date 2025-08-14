@@ -236,6 +236,12 @@ const commentsShown = {};
 
 // Render comments up to limit
 function renderComments(comments, postId) {
+    console.log("renderComments called with:", comments, "for postId:", postId);
+
+    if (!Array.isArray(comments)) {
+        console.warn("Comments is not an array, replacing with []");
+        comments = [];
+    }
     // Sort new to old
     comments = comments.slice().sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 

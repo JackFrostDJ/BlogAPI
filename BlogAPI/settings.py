@@ -11,10 +11,20 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-
+import environ, os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
+FEATHERLESS_API_KEY = env('FEATHERLESS_API_KEY')
+FEATHERLESS_API_URL = "https://api.featherless.ai/v1/completions"
+FEATHERLESS_MODEL = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+HEADERS = {
+    "Authorization": f"Bearer {FEATHERLESS_API_KEY}",
+    "Content-Type": "application/json"
+}
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
