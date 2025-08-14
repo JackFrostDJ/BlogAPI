@@ -1,0 +1,17 @@
+# Python environment
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Logs and system files
+*.log
+.DS_Store
+.env
+
+# Build output (optional — Vercel/Render usually builds themselves)
+frontend/dist/
+frontend/build/
+
+# OS/IDE-specific
+.vscode/
+.idea/
