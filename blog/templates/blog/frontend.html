@@ -167,9 +167,10 @@ async function fetchPosts() {
         postDiv.className = "post";
 
         postDiv.innerHTML = `
-            <h3>${post.title}</h3>
-            <p>${post.content}</p>
+            <h3 id="post-title-${post.id}">${post.title}</h3>
+            <p id="post-content-${post.id}">${post.content}</p>
             <small>By ${post.author} on ${new Date(post.created_at).toLocaleString()}</small>
+            <button onclick="startEditPost(${post.id})">Edit Post</button>
             <button onclick="deletePost(${post.id})" style="background: red; color: white;">Delete Post</button>
             <div><strong>Comments:</strong></div>
             <div>
@@ -184,6 +185,51 @@ async function fetchPosts() {
         `;
         postsDiv.appendChild(postDiv);
     }
+}
+
+function getCSRFToken() {
+    const name = "csrftoken";
+    const cookies = document.cookie.split(";");
+    for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+            return decodeURIComponent(cookie.substring(name.length + 1));
+        }
+    }
+    return null;
+}
+
+function startEditPost(postId) {
+    const titleEl = document.getElementById(`post-title-${postId}`);
+    const contentEl = document.getElementById(`post-content-${postId}`);
+
+    const currentTitle = titleEl.textContent;
+    const currentContent = contentEl.textContent;
+
+    titleEl.innerHTML = `<input type="text" id="edit-title-${postId}" value="${currentTitle}">`;
+    contentEl.innerHTML = `<textarea id="edit-content-${postId}">${currentContent}</textarea>
+        <br><button onclick="saveEditedPost(${postId})">Save</button>
+        <button onclick="fetchPosts()">Cancel</button>`;
+}
+
+async function saveEditedPost(postId) {
+    const newTitle = document.getElementById(`edit-title-${postId}`).value;
+    const newContent = document.getElementById(`edit-content-${postId}`).value;
+
+    const res = await fetch(`${API_BASE}/posts/${postId}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+        },
+        body: JSON.stringify({ title: newTitle, content: newContent })
+    });
+
+    if (!res.ok) {
+        alert("Failed to update post.");
+        return;
+    }
+
+    fetchPosts();
 }
 
 const commentsShown = {};
@@ -203,8 +249,10 @@ function renderComments(comments, postId) {
 
     let html = shownComments.map(c => `
         <p>
-            <strong>${c.name}:</strong> ${c.text}
-            <button onclick="deleteComment(${c.id})" style="background: red; color: white; border: none; margin-left: 10px; cursor: pointer;">Delete</button>
+            <strong>${c.name}:</strong>
+            <span id="comment-text-${c.id}">${c.text}</span>
+            <button onclick="startEditComment(${c.id}, ${postId})">Edit</button>
+            <button onclick="deleteComment(${c.id})">Delete</button>
         </p>
     `).join('');
 
@@ -219,6 +267,41 @@ function renderComments(comments, postId) {
     }
 
     return html;
+}
+
+function startEditComment(commentId, postId) {
+    const textEl = document.getElementById(`comment-text-${commentId}`);
+    const currentText = textEl.textContent;
+
+    // Hide Edit and Delete buttons in the same <p>
+    const parentP = textEl.parentElement;
+    const buttons = parentP.querySelectorAll("button");
+    buttons.forEach(btn => btn.style.display = "none");
+    
+    textEl.innerHTML = `
+        <input type="text" id="edit-input-${commentId}" value="${currentText}">
+        <button onclick="saveEditedComment(${commentId}, ${postId})">Save</button>
+        <button onclick="fetchPosts()">Cancel</button>
+    `;
+}
+
+async function saveEditedComment(commentId, postId) {
+    const newText = document.getElementById(`edit-input-${commentId}`).value;
+
+    const res = await fetch(`${API_BASE}/comments/${commentId}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json",
+                    "X-CSRFToken": getCSRFToken()
+         },
+        body: JSON.stringify({ text: newText })
+    });
+
+    if (!res.ok) {
+        alert("Failed to update comment.");
+        return;
+    }
+
+    fetchPosts();
 }
 
 function showMoreComments(postId) {
@@ -244,7 +327,7 @@ async function addComment(postId) {
     console.log("Adding comment:", { post: postId, name: author, text });
     const res = await fetch(`${API_BASE}/comments/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCSRFToken() },
         body: JSON.stringify({ post: postId, name: author, text })
     });
 
@@ -268,7 +351,7 @@ async function addPost() {
 
     await fetch(`${API_BASE}/posts/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCSRFToken() },
         body: JSON.stringify({ title, content, author })
     });
 
@@ -316,7 +399,7 @@ async function generateAI() {
 
     await fetch(`${API_BASE}/generate_post/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRFToken": getCSRFToken() },
         body: JSON.stringify({ prompt })
     });
 
